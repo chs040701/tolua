@@ -8,8 +8,12 @@ public class LuaInterface_LuaPropertyWrap
 	{
 		L.BeginClass(typeof(LuaInterface.LuaProperty), typeof(System.Object));
 		L.RegFunction("Get", Get);
+		L.RegFunction("GetRaw", GetRaw);
 		L.RegFunction("Set", Set);
+		L.RegFunction("SetRaw", SetRaw);
+		L.RegFunction("New", _CreateLuaInterface_LuaProperty);
 		L.RegFunction("__tostring", ToLua.op_ToString);
+		L.RegVar("Property", get_Property, null);
 		L.EndClass();
 	}
 
@@ -28,6 +32,20 @@ public class LuaInterface_LuaPropertyWrap
 	}
 
 	[MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+	static int GetRaw(IntPtr L)
+	{
+		try
+		{			
+			LuaProperty obj = (LuaProperty)ToLua.CheckObject(L, 1, typeof(LuaProperty));            
+            return obj.GetRaw(L);						
+		}
+		catch (Exception e)
+		{
+			return LuaDLL.toluaL_exception(L, e);
+		}
+	}
+
+	[MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
 	static int Set(IntPtr L)
 	{
 		try
@@ -36,6 +54,65 @@ public class LuaInterface_LuaPropertyWrap
             return obj.Set(L);
         }
         catch (Exception e)
+		{
+			return LuaDLL.toluaL_exception(L, e);
+		}
+	}
+
+	[MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+	static int SetRaw(IntPtr L)
+	{
+		try
+		{			
+            LuaProperty obj = (LuaProperty)ToLua.CheckObject(L, 1, typeof(LuaProperty));            
+            return obj.SetRaw(L);
+        }
+        catch (Exception e)
+		{
+			return LuaDLL.toluaL_exception(L, e);
+		}
+	}
+
+	[MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+	static int _CreateLuaInterface_LuaProperty(IntPtr L)
+	{
+		try
+		{
+			int count = LuaDLL.lua_gettop(L);
+
+			if (count == 2)
+			{
+				System.Reflection.PropertyInfo arg0 = (System.Reflection.PropertyInfo)ToLua.CheckObject<System.Reflection.PropertyInfo>(L, 1);
+				Type arg1 = ToLua.CheckMonoType(L, 2);
+				LuaProperty obj = new LuaProperty(arg0, arg1);
+				ToLua.PushSealed(L, obj);
+				return 1;
+			}
+			else
+			{
+				return LuaDLL.luaL_throw(L, "invalid arguments to ctor method: LuaInterface.LuaProperty.New");
+			}
+		}
+		catch (Exception e)
+		{
+			return LuaDLL.toluaL_exception(L, e);
+		}
+	}
+
+	[MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+	static int get_Property(IntPtr L)
+	{
+		object o = null;
+
+		try
+		{
+			o = ToLua.ToObject(L, 1);
+			LuaProperty obj = (LuaProperty)o;
+			System.Reflection.PropertyInfo ret = obj.Property;
+			ToLua.PushObject(L, ret);
+			return 1;
+		}
+		catch(Exception e)
 		{
 			return LuaDLL.toluaL_exception(L, e);
 		}

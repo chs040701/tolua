@@ -8,8 +8,12 @@ public class LuaInterface_LuaFieldWrap
 	{
 		L.BeginClass(typeof(LuaInterface.LuaField), typeof(System.Object));
 		L.RegFunction("Get", Get);
+		L.RegFunction("GetRaw", GetRaw);
 		L.RegFunction("Set", Set);
+		L.RegFunction("SetRaw", SetRaw);
+		L.RegFunction("New", _CreateLuaInterface_LuaField);
 		L.RegFunction("__tostring", ToLua.op_ToString);
+		L.RegVar("Field", get_Field, null);
 		L.EndClass();
 	}
 
@@ -28,6 +32,20 @@ public class LuaInterface_LuaFieldWrap
 	}
 
 	[MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+	static int GetRaw(IntPtr L)
+	{
+		try
+		{			
+			LuaField obj = (LuaField)ToLua.CheckObject(L, 1, typeof(LuaField));            
+            return obj.GetRaw(L);						
+		}
+		catch (Exception e)
+		{
+			return LuaDLL.toluaL_exception(L, e);
+		}
+	}
+
+	[MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
 	static int Set(IntPtr L)
 	{
 		try
@@ -36,6 +54,65 @@ public class LuaInterface_LuaFieldWrap
             return obj.Set(L);
         }
         catch (Exception e)
+		{
+			return LuaDLL.toluaL_exception(L, e);
+		}
+	}
+
+	[MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+	static int SetRaw(IntPtr L)
+	{
+		try
+		{			
+            LuaField obj = (LuaField)ToLua.CheckObject(L, 1, typeof(LuaField));            
+            return obj.SetRaw(L);
+        }
+        catch (Exception e)
+		{
+			return LuaDLL.toluaL_exception(L, e);
+		}
+	}
+
+	[MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+	static int _CreateLuaInterface_LuaField(IntPtr L)
+	{
+		try
+		{
+			int count = LuaDLL.lua_gettop(L);
+
+			if (count == 2)
+			{
+				System.Reflection.FieldInfo arg0 = (System.Reflection.FieldInfo)ToLua.CheckObject<System.Reflection.FieldInfo>(L, 1);
+				Type arg1 = ToLua.CheckMonoType(L, 2);
+				LuaField obj = new LuaField(arg0, arg1);
+				ToLua.PushSealed(L, obj);
+				return 1;
+			}
+			else
+			{
+				return LuaDLL.luaL_throw(L, "invalid arguments to ctor method: LuaInterface.LuaField.New");
+			}
+		}
+		catch (Exception e)
+		{
+			return LuaDLL.toluaL_exception(L, e);
+		}
+	}
+
+	[MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+	static int get_Field(IntPtr L)
+	{
+		object o = null;
+
+		try
+		{
+			o = ToLua.ToObject(L, 1);
+			LuaField obj = (LuaField)o;
+			System.Reflection.FieldInfo ret = obj.Field;
+			ToLua.PushObject(L, ret);
+			return 1;
+		}
+		catch(Exception e)
 		{
 			return LuaDLL.toluaL_exception(L, e);
 		}

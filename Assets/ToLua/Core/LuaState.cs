@@ -133,7 +133,15 @@ namespace LuaInterface
             System_DelegateWrap.Register(this);
             System_EnumWrap.Register(this);
             System_ArrayWrap.Register(this);
-            System_TypeWrap.Register(this);                                               
+            System_TypeWrap.Register(this);
+            
+		    BeginModule("Reflection");
+		    System_Reflection_MethodInfoWrap.Register(this);
+		    System_Reflection_ConstructorInfoWrap.Register(this);
+		    System_Reflection_ParameterInfoWrap.Register(this);
+		    System_Reflection_MethodBaseWrap.Register(this);
+		    EndModule();                            
+                                       
             BeginModule("Collections");
             System_Collections_IEnumeratorWrap.Register(this);
 

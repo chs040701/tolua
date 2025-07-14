@@ -31,9 +31,10 @@ namespace LuaInterface
         MethodInfo method = null;
         List<Type> list = new List<Type>();
         Type kclass = null;
+        public MethodInfo Method => method;
 
-        [NoToLuaAttribute]
-        public LuaMethod(MethodInfo md, Type t, Type[] types)
+        // [NoToLuaAttribute]
+        public LuaMethod(MethodInfo md, Type t, Type[] types = null)
         {
             method = md;
             kclass = t;            
@@ -42,6 +43,19 @@ namespace LuaInterface
             {
                 list.AddRange(types);
             }
+            else
+            {
+                foreach(ParameterInfo paramInfo in md.GetParameters())
+                {
+                    list.Add(paramInfo.ParameterType);
+                }
+            }
+        }
+
+        public LuaMethod MakeGenericMethod(Type[] types)
+        {
+            MethodInfo mi = method.MakeGenericMethod(types);
+            return new LuaMethod(mi, kclass);
         }
         
         public int Call(IntPtr L)
@@ -87,6 +101,56 @@ namespace LuaInterface
                 {
                     ++count;
                     ToLua.Push(L, args[i]);
+                }
+            }
+
+            return count;
+        }
+
+        
+        public int CallRaw(IntPtr L)
+        {            
+            object[] args = null;
+            object obj = null;
+            int offset = 1;
+
+            if (!method.IsStatic)
+            {
+                offset += 1;
+                obj = ToLua.CheckObject(L, 2, kclass);
+            }
+
+            ToLua.CheckArgsCount(L, list.Count + offset);
+
+            if (list.Count > 0)
+            {
+                args = new object[list.Count];
+                offset += 1;
+
+                for (int i = 0; i < list.Count; i++)
+                {
+                    bool isRef = list[i].IsByRef;
+                    Type t0 = isRef ? list[i].GetElementType() : list[i];
+                    object o = ToLua.CheckObject(L, i + offset, t0);                    
+                    args[i] = o;
+                }
+            }
+            
+            object ret = method.Invoke(obj, args);
+            int count = 0;
+
+            if (method.ReturnType != typeof(void))
+            {
+                ++count;
+                ToLua.PushObject(L, ret);
+            }
+
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (list[i].IsByRef)
+                {
+                    ++count;
+                    ToLua.PushObject(L, args[i]);
                 }
             }
 

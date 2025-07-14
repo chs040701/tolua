@@ -8,8 +8,11 @@ public class LuaInterface_LuaConstructorWrap
 	{
 		L.BeginClass(typeof(LuaInterface.LuaConstructor), typeof(System.Object));
 		L.RegFunction("Call", Call);
+		L.RegFunction("CallRaw", CallRaw);
 		L.RegFunction("Destroy", Destroy);
+		L.RegFunction("New", _CreateLuaInterface_LuaConstructor);
 		L.RegFunction("__tostring", ToLua.op_ToString);
+		L.RegVar("Method", get_Method, null);
 		L.EndClass();
 	}
 
@@ -20,6 +23,20 @@ public class LuaInterface_LuaConstructorWrap
 		{			
 			LuaConstructor obj = (LuaConstructor)ToLua.CheckObject(L, 1, typeof(LuaConstructor));            
 			return obj.Call(L);						
+		}
+		catch(Exception e)
+		{
+			return LuaDLL.toluaL_exception(L, e);
+		}
+	}
+
+	[MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+	static int CallRaw(IntPtr L)
+	{
+		try
+		{			
+			LuaConstructor obj = (LuaConstructor)ToLua.CheckObject(L, 1, typeof(LuaConstructor));            
+			return obj.CallRaw(L);						
 		}
 		catch(Exception e)
 		{
@@ -41,6 +58,58 @@ public class LuaInterface_LuaConstructorWrap
 		catch(Exception e)
 		{
 			return LuaDLL.toluaL_exception(L, e);
+		}
+	}
+
+	[MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+	static int _CreateLuaInterface_LuaConstructor(IntPtr L)
+	{
+		try
+		{
+			int count = LuaDLL.lua_gettop(L);
+
+			if (count == 1)
+			{
+				System.Reflection.ConstructorInfo arg0 = (System.Reflection.ConstructorInfo)ToLua.CheckObject<System.Reflection.ConstructorInfo>(L, 1);
+				LuaConstructor obj = new LuaConstructor(arg0);
+				ToLua.PushSealed(L, obj);
+				return 1;
+			}
+			else if (count == 2)
+			{
+				System.Reflection.ConstructorInfo arg0 = (System.Reflection.ConstructorInfo)ToLua.CheckObject<System.Reflection.ConstructorInfo>(L, 1);
+				Type[] arg1 = ToLua.CheckObjectArray<Type>(L, 2);
+				LuaConstructor obj = new LuaConstructor(arg0, arg1);
+				ToLua.PushSealed(L, obj);
+				return 1;
+			}
+			else
+			{
+				return LuaDLL.luaL_throw(L, "invalid arguments to ctor method: LuaInterface.LuaConstructor.New");
+			}
+		}
+		catch (Exception e)
+		{
+			return LuaDLL.toluaL_exception(L, e);
+		}
+	}
+
+	[MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+	static int get_Method(IntPtr L)
+	{
+		object o = null;
+
+		try
+		{
+			o = ToLua.ToObject(L, 1);
+			LuaConstructor obj = (LuaConstructor)o;
+			System.Reflection.ConstructorInfo ret = obj.Method;
+			ToLua.PushObject(L, ret);
+			return 1;
+		}
+		catch(Exception e)
+		{
+			return LuaDLL.toluaL_exception(L, e, o, "attempt to index Method on a nil value");
 		}
 	}
 }

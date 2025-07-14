@@ -46,6 +46,11 @@ namespace LuaInterface
         public static void OpenLibs(IntPtr L)
         {
             LuaDLL.lua_getglobal(L, "tolua");
+            
+            //支持一下cast
+            LuaDLL.lua_pushstring(L, "cast");
+            LuaDLL.lua_pushcfunction(L, Cast);
+            LuaDLL.lua_rawset(L, -3);
 
             LuaDLL.lua_pushstring(L, "findtype");
             LuaDLL.lua_pushcfunction(L, FindType);
@@ -57,6 +62,14 @@ namespace LuaInterface
 
             LuaDLL.lua_pushstring(L, "getmethod");
             LuaDLL.tolua_pushcfunction(L, GetMethod);
+            LuaDLL.lua_rawset(L, -3);
+            
+            LuaDLL.lua_pushstring(L, "getmethodwithfullname");
+            LuaDLL.tolua_pushcfunction(L, GetMethodWithFullName);
+            LuaDLL.lua_rawset(L, -3);
+
+            LuaDLL.lua_pushstring(L, "getmethodwithflag");
+            LuaDLL.tolua_pushcfunction(L, GetMethodWithFlag);
             LuaDLL.lua_rawset(L, -3);
 
             LuaDLL.lua_pushstring(L, "getconstructor");
@@ -157,7 +170,7 @@ namespace LuaInterface
             return 1;
         }
 
-        static void PushLuaMethod(IntPtr L, MethodInfo md, Type t, Type[] types)
+        static void PushLuaMethod(IntPtr L, MethodInfo md, Type t, Type[] types = null)
         {
             if (md != null)
             {
@@ -212,6 +225,79 @@ namespace LuaInterface
 
             return 1;
         }
+        
+        
+        [MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+        static int GetMethodWithFlag(IntPtr L)
+        {
+            try
+            {
+                int count = LuaDLL.lua_gettop(L);
+                Type t = ToLua.CheckMonoType(L, 1);
+                string name = ToLua.CheckString(L, 2);
+                int flag = LuaDLL.luaL_checkinteger(L, 3);
+                
+                Type[] types = null;
+                if (count > 3)
+                {
+                    types = new Type[count - 3];
+
+                    for (int i = 4; i <= count; i++)
+                    {
+                        Type ti = ToLua.CheckMonoType(L, i);
+                        if (ti == null) LuaDLL.luaL_typerror(L, i, "Type");
+                        types[i - 4] = ti;
+                    }                                       
+                }
+                
+                MethodInfo md = null;
+                if (types == null)
+                {
+                    md = t.GetMethod(name, (BindingFlags)flag);
+                }
+                else
+                {
+                    md = t.GetMethod(name, (BindingFlags)flag, null, types, null);
+                }
+                
+                PushLuaMethod(L, md, t, types);
+            }
+            catch(Exception e)
+            {
+                return LuaDLL.toluaL_exception(L, e);
+            }
+
+            return 1;
+        }
+
+        [MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+        static int GetMethodWithFullName(IntPtr L)
+        {
+            try
+            {
+			    ToLua.CheckArgsCount(L, 2);
+                Type t = ToLua.CheckMonoType(L, 1);
+                string name = ToLua.CheckString(L, 2);
+                
+                MethodInfo md = null;
+		        foreach(var mi in t.GetMethods())
+		        {
+                    if(mi.ToString() == name)
+                    {
+                        md = mi;
+                        break;
+                    }
+                }
+                
+                PushLuaMethod(L, md, t);
+            }
+            catch(Exception e)
+            {
+                return LuaDLL.toluaL_exception(L, e);
+            }
+
+            return 1;
+        }
 
         static void PushLuaConstructor(IntPtr L, ConstructorInfo func, Type[] types)
         {
@@ -233,7 +319,7 @@ namespace LuaInterface
             {
                 int count = LuaDLL.lua_gettop(L);
                 Type t = (Type)ToLua.CheckObject(L, 1, typeof(Type));                
-                Type[] types = null;
+                Type[] types = Type.EmptyTypes;
 
                 if (count > 1)
                 {
@@ -291,6 +377,16 @@ namespace LuaInterface
                     PushLuaMethod(L, o, obj, null);
                     return 1;
                 }
+                else if (count == 4 && TypeChecker.CheckTypes<Type, string, int, Type[]>(L, 1))
+                {
+                    Type obj = (Type)ToLua.ToObject(L, 1);
+                    string arg0 = ToLua.ToString(L, 2);
+				    int arg1 = LuaDLL.luaL_checkinteger(L, 3);
+                    Type[] arg2 = ToLua.ToObjectArray<System.Type>(L, 4);
+                    MethodInfo o = obj.GetMethod(arg0, arg1, arg2);
+                    PushLuaMethod(L, o, obj, arg2);
+                    return 1;
+                }
                 else if (count == 4 && TypeChecker.CheckTypes<Type, string, Type[], ParameterModifier[]>(L, 1))
                 {
                     Type obj = (Type)ToLua.ToObject(L, 1);
@@ -299,6 +395,17 @@ namespace LuaInterface
                     ParameterModifier[] arg2 = ToLua.ToStructArray<ParameterModifier>(L, 4);
                     MethodInfo o = obj.GetMethod(arg0, arg1, arg2);
                     PushLuaMethod(L, o, obj, arg1);
+                    return 1;
+                }
+                else if (count == 5 && TypeChecker.CheckTypes<Type, string, int, Type[], ParameterModifier[]>(L, 1))
+                {
+                    Type obj = (Type)ToLua.ToObject(L, 1);
+                    string arg0 = ToLua.ToString(L, 2);
+				    int arg1 = LuaDLL.luaL_checkinteger(L, 3);
+                    Type[] arg2 = ToLua.ToObjectArray<System.Type>(L, 4);
+                    ParameterModifier[] arg3 = ToLua.ToStructArray<ParameterModifier>(L, 5);
+                    MethodInfo o = obj.GetMethod(arg0, arg1, arg2, arg3);
+                    PushLuaMethod(L, o, obj, arg2);
                     return 1;
                 }
                 else if (count == 6 && TypeChecker.CheckTypes<Type, string, uint, Binder, Type[], ParameterModifier[]> (L, 1))
@@ -313,6 +420,19 @@ namespace LuaInterface
                     PushLuaMethod(L, o, obj, arg3);
                     return 1;
                 }
+                else if (count == 7 && TypeChecker.CheckTypes<Type, string, int, uint, Binder, Type[], ParameterModifier[]> (L, 1))
+                {
+                    System.Type obj = (System.Type)ToLua.ToObject(L, 1);
+                    string arg0 = ToLua.ToString(L, 2);
+				    int arg1 = LuaDLL.luaL_checkinteger(L, 3);
+                    BindingFlags arg2 = (BindingFlags)LuaDLL.lua_tonumber(L, 4);
+                    Binder arg3 = (Binder)ToLua.ToObject(L, 5);
+                    Type[] arg4 = ToLua.ToObjectArray<Type>(L, 6);
+                    ParameterModifier[] arg5 = ToLua.ToStructArray<ParameterModifier>(L, 7);
+                    MethodInfo o = obj.GetMethod(arg0, arg1, arg2, arg3, arg4, arg5);
+                    PushLuaMethod(L, o, obj, arg4);
+                    return 1;
+                }
                 else if (count == 7 && TypeChecker.CheckTypes<Type, string, uint, Binder, CallingConventions, Type[], ParameterModifier[]> (L, 1))
                 {
                     Type obj = (Type)ToLua.ToObject(L, 1);
@@ -324,6 +444,20 @@ namespace LuaInterface
                     ParameterModifier[] arg5 = ToLua.ToStructArray<ParameterModifier>(L, 7);
                     MethodInfo o = obj.GetMethod(arg0, arg1, arg2, arg3, arg4, arg5);
                     PushLuaMethod(L, o, obj, arg4);
+                    return 1;
+                }
+                else if (count == 8 && TypeChecker.CheckTypes<Type, string, int, uint, Binder, CallingConventions, Type[], ParameterModifier[]> (L, 1))
+                {
+                    Type obj = (Type)ToLua.ToObject(L, 1);
+                    string arg0 = ToLua.ToString(L, 2);
+				    int arg1 = LuaDLL.luaL_checkinteger(L, 3);
+                    BindingFlags arg2 = (BindingFlags)LuaDLL.lua_tonumber(L, 4);
+                    Binder arg3 = (Binder)ToLua.ToObject(L, 5);
+                    CallingConventions arg4 = (CallingConventions)ToLua.ToObject(L, 6);
+                    Type[] arg5 = ToLua.ToObjectArray<Type>(L, 7);
+                    ParameterModifier[] arg6 = ToLua.ToStructArray<ParameterModifier>(L, 8);
+                    MethodInfo o = obj.GetMethod(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+                    PushLuaMethod(L, o, obj, arg5);
                     return 1;
                 }
                 else
@@ -529,26 +663,68 @@ namespace LuaInterface
                 {
                     return true;
                 }
-            }                
-
-            Assembly assembly = Assembly.Load(name);
-
-            if (assembly == null)
-            {
-                assembly = Assembly.Load(AssemblyName.GetAssemblyName(name));
             }
 
-            if (assembly != null && !list.Contains(assembly))
-            {
-                list.Add(assembly);
-            }
+                Assembly assembly = Assembly.Load(name);
 
-            return assembly != null;
-        }
+                if (assembly == null)
+                {
+                    assembly = Assembly.Load(AssemblyName.GetAssemblyName(name));
+                }
+
+                if (assembly != null && !list.Contains(assembly))
+                {
+                    list.Add(assembly);
+                }
+
+                return assembly != null;
+            }
 
         public void Dispose()
         {
             list.Clear();
+        }
+        
+        //支持一下动态  tolua.cast
+        [MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+        static int Cast(IntPtr L)
+        {
+            ToLua.CheckArgsCount(L, 2);
+            
+            //支持一下对值类型的转换
+            if (LuaDLL.lua_isnumber(L, 1) == 1)
+            {
+                var o = LuaDLL.lua_tonumber(L, 1);
+                var name = ToLua.CheckString(L, 2);
+                var type = Type.GetType(name);
+                
+                var ret = TypeChecker.ChangeType(o, type);
+                ToLua.PushObject(L, ret);
+                return 1;
+            }
+            else
+            {
+                var o = (System.Object)ToLua.CheckObject<System.Object>(L, 1);
+
+                string name = ToLua.CheckString(L, 2);
+                LuaReflection reflection = LuaReflection.Get(L);            
+                List<Assembly> list = reflection.list;
+                Type type = null;            
+
+                for (int i = 0; i < list.Count; i++)
+                {
+                    type = list[i].GetType(name);
+
+                    if (type != null)
+                    {
+                        break;
+                    }
+                }            
+
+                var ret = TypeChecker.ChangeType(o, type);
+                ToLua.Push(L, ret);
+                return 1;
+            }
         }
     }
 }

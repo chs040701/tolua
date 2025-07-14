@@ -9,7 +9,11 @@ public class LuaInterface_LuaMethodWrap
 		L.BeginClass(typeof(LuaInterface.LuaMethod), typeof(System.Object));
 		L.RegFunction("Destroy", Destroy);
 		L.RegFunction("Call", Call);
+		L.RegFunction("CallRaw", CallRaw);
+		L.RegFunction("MakeGenericMethod", MakeGenericMethod);
+		L.RegFunction("New", _CreateLuaInterface_LuaMethod);
 		L.RegFunction("__tostring", ToLua.op_ToString);
+		L.RegVar("Method", get_Method, null);
 		L.EndClass();
 	}
 
@@ -37,6 +41,91 @@ public class LuaInterface_LuaMethodWrap
 		{			
 			LuaMethod obj = (LuaMethod)ToLua.CheckObject(L, 1, typeof(LuaMethod));            
 			return obj.Call(L);						
+		}
+		catch(Exception e)
+		{
+			return LuaDLL.toluaL_exception(L, e);
+		}
+	}
+
+	[MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+	static int CallRaw(IntPtr L)
+	{
+		try
+		{			
+			LuaMethod obj = (LuaMethod)ToLua.CheckObject(L, 1, typeof(LuaMethod));            
+			return obj.CallRaw(L);						
+		}
+		catch(Exception e)
+		{
+			return LuaDLL.toluaL_exception(L, e);
+		}
+	}
+
+	[MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+	static int MakeGenericMethod(IntPtr L)
+	{
+		try
+		{			
+			LuaMethod obj = (LuaMethod)ToLua.CheckObject(L, 1, typeof(LuaMethod));
+			Type[] arg0 = ToLua.CheckObjectArray<Type>(L, 2);
+			LuaMethod o = obj.MakeGenericMethod(arg0);
+			ToLua.PushSealed(L, o);       
+			return 1;						
+		}
+		catch(Exception e)
+		{
+			return LuaDLL.toluaL_exception(L, e);
+		}
+	}
+
+	[MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+	static int _CreateLuaInterface_LuaMethod(IntPtr L)
+	{
+		try
+		{
+			int count = LuaDLL.lua_gettop(L);
+
+			if (count == 2)
+			{
+				System.Reflection.MethodInfo arg0 = (System.Reflection.MethodInfo)ToLua.CheckObject<System.Reflection.MethodInfo>(L, 1);
+				Type arg1 = ToLua.CheckMonoType(L, 2);
+				LuaMethod obj = new LuaMethod(arg0, arg1);
+				ToLua.PushSealed(L, obj);
+				return 1;
+			}
+			else if (count == 3)
+			{
+				System.Reflection.MethodInfo arg0 = (System.Reflection.MethodInfo)ToLua.CheckObject<System.Reflection.MethodInfo>(L, 1);
+				Type arg1 = ToLua.CheckMonoType(L, 2);
+				Type[] arg2 = ToLua.CheckObjectArray<Type>(L, 3);
+				LuaMethod obj = new LuaMethod(arg0, arg1, arg2);
+				ToLua.PushSealed(L, obj);
+				return 1;
+			}
+			else
+			{
+				return LuaDLL.luaL_throw(L, "invalid arguments to ctor method: LuaInterface.LuaMethod.New");
+			}
+		}
+		catch (Exception e)
+		{
+			return LuaDLL.toluaL_exception(L, e);
+		}
+	}
+
+	[MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+	static int get_Method(IntPtr L)
+	{
+		object o = null;
+
+		try
+		{
+			o = ToLua.ToObject(L, 1);
+			LuaMethod obj = (LuaMethod)o;
+			System.Reflection.MethodInfo ret = obj.Method;
+			ToLua.PushObject(L, ret);
+			return 1;
 		}
 		catch(Exception e)
 		{

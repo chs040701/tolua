@@ -29,16 +29,23 @@ namespace LuaInterface
     public sealed class LuaConstructor
     {
         ConstructorInfo method = null;
-        List<Type> list = null;
+        List<Type> list = new List<Type>();
+        public ConstructorInfo Method => method;
 
-        [NoToLuaAttribute]
-        public LuaConstructor(ConstructorInfo func, Type[] types)
+        public LuaConstructor(ConstructorInfo func, Type[] types = null)
         {
             method = func;            
 
             if (types != null)
             {
-                list = new List<Type>(types);
+                list.AddRange(types);
+            }
+            else
+            {
+                foreach(ParameterInfo paramInfo in func.GetParameters())
+                {
+                    list.Add(paramInfo.ParameterType);
+                }
             }
         }
 
@@ -70,6 +77,40 @@ namespace LuaInterface
                 {
                     ++count;
                     ToLua.Push(L, args[i]);
+                }
+            }
+
+            return count;
+        }
+
+        public int CallRaw(IntPtr L)
+        {
+            object[] args = null;
+            ToLua.CheckArgsCount(L, list.Count + 1);
+
+            if (list.Count > 0)
+            {
+                args = new object[list.Count];
+
+                for (int i = 0; i < list.Count; i++)
+                {
+                    bool isRef = list[i].IsByRef;
+                    Type t0 = isRef ? list[i].GetElementType() : list[i];
+                    object o = ToLua.CheckObject(L, i + 2, t0);
+                    args[i] = o;
+                }
+            }
+
+            object ret = method.Invoke(args);
+            int count = 1;
+            ToLua.PushObject(L, ret);
+
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (list[i].IsByRef)
+                {
+                    ++count;
+                    ToLua.PushObject(L, args[i]);
                 }
             }
 

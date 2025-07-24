@@ -491,7 +491,7 @@ public static class ToLuaExport
             {
                 ParameterInfo param = paramInfos[j];
 
-                if (!param.ParameterType.IsByRef)
+                if (!param.ParameterType.IsByRef || ((param.Attributes & ParameterAttributes.In) != ParameterAttributes.None))
                 {
                     sbArgs.Append("arg");
                 }
@@ -1222,7 +1222,7 @@ public static class ToLuaExport
             _MethodBase m = methods[i];
             int count = 1;
 
-            if (IsGenericMethod(m.Method))
+            if (IsGenericMethod(m.Method) || HasByRefLikeParameter(m.Method))
             {
                 continue;
             }
@@ -1547,6 +1547,15 @@ public static class ToLuaExport
         return true;
     }
 
+    static bool HasByRefLikeParameter(MethodBase md)
+    {
+        foreach(ParameterInfo pi in md.GetParameters())
+        {
+            if(pi.ParameterType.IsByRefLike)
+                return true;
+        }
+        return false;
+    }
     static bool IsGenericMethod(MethodBase md)
     {
         if (md.IsGenericMethod)
@@ -1595,7 +1604,7 @@ public static class ToLuaExport
         {
             _MethodBase m = methods[i];
 
-            if (IsGenericMethod(m.Method))
+            if (IsGenericMethod(m.Method) || HasByRefLikeParameter(m.Method))
             {
                 Debugger.Log("Generic Method {0}.{1} cannot be export to lua", LuaMisc.GetTypeName(type), m.GetTotalName());
                 continue;
@@ -2935,7 +2944,7 @@ public static class ToLuaExport
         {
             string curName = GetMethodName(methods[i].Method);
 
-            if (curName == name && !IsGenericMethod(methods[i].Method))
+            if (curName == name && !(IsGenericMethod(methods[i].Method) || HasByRefLikeParameter(methods[i].Method)))
             {
                 Push(list, methods[i]);
             }
